@@ -1,5 +1,6 @@
 package com.siemens.mindsphere.hackathon.team02;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @RestController
 public class EventController {
 
@@ -21,7 +25,7 @@ public class EventController {
     private String accessToken;
     
     @RequestMapping("/events")
-    public String viewErrorEvents() {
+    public String viewErrorEvents() throws JSONException, JsonProcessingException {
     	
     	HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -29,11 +33,21 @@ public class EventController {
 		
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 		
+
+		Filter filterData = new Filter();
+		filterData.setEntityId("f23aa73ac6dd4f2f994037e8ce3c56ed");
+		filterData.setAcknowledged(false);
+		FilterTimestamp filterTs = new FilterTimestamp();
+		filterTs.setBetween("[2018-05-25T00:00:00.001Z,2018-05-25T18:51:45.377Z)");
+		filterData.setTimestamp(filterTs);
+		JSONObject obj = new JSONObject();
+		ObjectMapper mapper = new ObjectMapper();
+		obj.put("filter", filterData);
+		String eventUrl = "https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/events?filter=" + mapper.writeValueAsString(filterData) + "&size=1000";
 		
-		ResponseEntity<String> result = restTemplate.exchange(
-				"https://gateway.eu1.mindsphere.io/api/iottimeseries/v3/timeseries/f23aa73ac6dd4f2f994037e8ce3c56ed/NC_DallasDemoPrep_MCL_AspectType01?from=2018-05-25T00:00:00Z&to=2018-05-25T23:50:00Z", HttpMethod.GET, entity, String.class);
+		ResponseEntity<String> result = restTemplate.exchange(eventUrl, HttpMethod.GET, entity, String.class);
 		//System.out.println(result.getBody());
-		JSONObject obj = new JSONObject();           
+          
     	return result.getBody();
     }
     
